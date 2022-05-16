@@ -55,18 +55,23 @@ public class ScrollApplicationActivity extends AppCompatActivity {
         ArrayList<ApplicantModel> item = new ArrayList<>();
         jobTracker = new HashMap<>();
 
-        ApplicantAdapter arrayAdapter =new ApplicantAdapter(ScrollApplicationActivity.this, R.layout.item_in_cardview, item);
+        ApplicantAdapter arrayAdapter = new ApplicantAdapter(ScrollApplicationActivity.this, R.layout.item_in_cardview, item);
         flingAdapterView.setAdapter(arrayAdapter);
 
         new EmployerDb(ScrollApplicationActivity.this, new EmployerDb.OnEmployerModel() {
             @Override
             public void onResult(EmployerModel employerModel) {
                 for (DocumentReference job : employerModel.getJobs()) {
+                    Toast.makeText(getApplicationContext(), job.toString(), Toast.LENGTH_LONG).show();
                     new JobDb(ScrollApplicationActivity.this, new JobDb.OnJobModel() {
                         @Override
                         public void onResult(JobModel jobModel) {
-                            for (DocumentReference application : jobModel.getPending()) {
-                                Log.d(TAG, "onResult: " + application.getId());
+                            if (jobModel.getPending() == null) {
+                                return;
+                            }
+
+                            for (DocumentReference pending : jobModel.getPending()) {
+                                Log.d(TAG, "onResult: " + pending.getId());
                                 new ApplicationDb(ScrollApplicationActivity.this, new ApplicationDb.OnApplicationModel() {
                                     @Override
                                     public void onResult(ApplicationModel applicationModel) {
@@ -77,7 +82,7 @@ public class ScrollApplicationActivity extends AppCompatActivity {
                                                 item.add(applicantModel);
 
                                                 ArrayList<DocumentReference> tracker = new ArrayList<>();
-                                                tracker.add(application);
+                                                tracker.add(pending);
                                                 tracker.add(job);
 
                                                 jobTracker.put(applicantModel, tracker);
@@ -85,7 +90,7 @@ public class ScrollApplicationActivity extends AppCompatActivity {
                                             }
                                         }).getApplicantModel(applicationModel.getApplicant());
                                     }
-                                }).getApplicationModel(application);
+                                }).getApplicationModel(pending);
                             }
                         }
                     }).getJobModel(job);
