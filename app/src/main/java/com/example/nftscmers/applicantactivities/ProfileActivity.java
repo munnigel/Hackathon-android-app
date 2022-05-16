@@ -3,6 +3,7 @@ package com.example.nftscmers.applicantactivities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -11,18 +12,21 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.nftscmers.R;
 import com.example.nftscmers.commonactivities.LoginActivity;
 import com.example.nftscmers.db.ApplicantDb;
+import com.example.nftscmers.employeractivities.ScrollApplicationActivity;
 import com.example.nftscmers.fragments.SkillsFragment;
 import com.example.nftscmers.fragments.YesNoDialogFragment;
 import com.example.nftscmers.objectmodels.ApplicantModel;
 import com.example.nftscmers.utils.Globals;
 import com.example.nftscmers.utils.LoggedInUser;
 import com.example.nftscmers.utils.Utils;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
@@ -34,8 +38,9 @@ import java.util.List;
 import java.util.Map;
 
 public class ProfileActivity extends AppCompatActivity {
-    private static final String TAG = "ApplicantEditProfile";
+    public static final String TAG = "ApplicantEditProfile";
 
+    TextView title;
     ImageView back;
     ImageView editProfile;
     ImageView profilePic;
@@ -52,6 +57,7 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_applicant_profile);
 
+        title = findViewById(R.id.applicant_title);
         back = findViewById(R.id.applicant_back_arrow);
         editProfile = findViewById(R.id.applicant_edit_profile);
         profilePic = findViewById(R.id.applicant_profile_pic);
@@ -77,20 +83,18 @@ public class ProfileActivity extends AppCompatActivity {
                 SkillsFragment skillsFragment = new SkillsFragment(applicant.getSkills());
                 getSupportFragmentManager().beginTransaction().replace(R.id.applicant_skills, skillsFragment).commit();
             }
-        }).getApplicantModel(LoggedInUser.getInstance().getEmail());
+        }).getApplicantModel(getIntent().getStringExtra(ProfileActivity.TAG));
+
+
+        if (!getIntent().getStringExtra(ProfileActivity.TAG).equals(LoggedInUser.getInstance().getEmail())){
+            Utils.disableButton(editProfile);
+            Utils.disableButton(logout);
+        }
 
         editProfile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(ProfileActivity.this, EditProfileActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(ProfileActivity.this, ScrollJobActivity.class);
                 startActivity(intent);
             }
         });
@@ -110,5 +114,54 @@ public class ProfileActivity extends AppCompatActivity {
                 }).show(getSupportFragmentManager(), TAG);
             }
         });
+
+        BottomNavigationView bottomNavigationView=findViewById(R.id.bottom_navigation);
+
+        if (LoggedInUser.getInstance().getAccountType() == Globals.APPLICANT) {
+            back.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(ProfileActivity.this, ScrollJobActivity.class);
+                    startActivity(intent);
+                }
+            });
+
+            // Set Home selected
+            bottomNavigationView.setSelectedItemId(R.id.profile);
+
+            // Perform item selected listener
+            bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+                @Override
+                public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
+                    switch(item.getItemId())
+                    {
+                        case R.id.history:
+                            startActivity(new Intent(getApplicationContext(), ApplicationHistoryActivity.class));
+                            overridePendingTransition(0,0);
+                            return true;
+                        case R.id.home:
+                            startActivity(new Intent(getApplicationContext(),ScrollJobActivity.class));
+                            overridePendingTransition(0,0);
+                            return true;
+                        case R.id.profile:
+                            return true;
+                    }
+                    return false;
+                }
+            });
+        } else {
+            title.setText(getString(R.string.applicant_profile));
+
+            back.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(ProfileActivity.this, ScrollApplicationActivity.class);
+                    startActivity(intent);
+                }
+            });
+
+            Utils.disableButton(bottomNavigationView);
+        }
     }
 }

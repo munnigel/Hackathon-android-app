@@ -58,7 +58,6 @@ public class EditProfileActivity extends AppCompatActivity {
         Utils.uneditableField(name);
         Utils.uneditableField(email);
 
-        LoggedInUser.getInstance().setUser(null, "jon@gmail.com", Globals.APPLICANT);
         // Loading of previous applicant data
         new ApplicantDb(EditProfileActivity.this, new ApplicantDb.OnApplicantModel() {
             @Override
@@ -128,6 +127,7 @@ public class EditProfileActivity extends AppCompatActivity {
                     @Override
                     protected void onResult() {
                         Intent intent = new Intent(EditProfileActivity.this, ProfileActivity.class);
+                        intent.putExtra(ProfileActivity.TAG, LoggedInUser.getInstance().getEmail());
                         startActivity(intent);
                     }
                 }, new ApplicantDb.OnApplicantUploadFailure() {

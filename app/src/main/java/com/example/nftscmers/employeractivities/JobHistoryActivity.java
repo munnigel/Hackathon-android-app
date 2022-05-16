@@ -3,10 +3,12 @@ package com.example.nftscmers.employeractivities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -22,6 +24,7 @@ import com.example.nftscmers.objectmodels.JobModel;
 import com.example.nftscmers.objectmodels.JobModel;
 import com.example.nftscmers.utils.Globals;
 import com.example.nftscmers.utils.LoggedInUser;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -41,8 +44,6 @@ public class JobHistoryActivity extends AppCompatActivity {
         setContentView(R.layout.activity_view_job_history);
 
         jobListView = findViewById(R.id.job_history_list);
-
-        LoggedInUser.getInstance().setUser(FirebaseFirestore.getInstance().collection(EmployerModel.getCollectionId()).document("aftershock@gmail.com"), "aftershock@gmail.com", Globals.EMPLOYER);
 
         ArrayAdapter arrayAdapter = new JobHistoryAdapter(JobHistoryActivity.this, R.layout.item_job_history, jobDetailsList, new JobHistoryAdapter.OnItemClickListener() {
             @Override
@@ -76,6 +77,41 @@ public class JobHistoryActivity extends AppCompatActivity {
                 }
             }
         }).getEmployerModel(LoggedInUser.getInstance().getEmail());
+
+
+        // Initialize and assign variable
+        BottomNavigationView bottomNavigationView=findViewById(R.id.bottom_navigation);
+
+        // Set Home selected
+        bottomNavigationView.setSelectedItemId(R.id.history);
+
+        // Perform item selected listener
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
+                switch(item.getItemId())
+                {
+                    case R.id.history:
+                        return true;
+                    case R.id.home:
+                        startActivity(new Intent(getApplicationContext(), ScrollApplicationActivity.class));
+                        overridePendingTransition(0,0);
+                        return true;
+                    case R.id.create:
+                        startActivity(new Intent(getApplicationContext(), EditJobActivity.class));
+                        overridePendingTransition(0,0);
+                        return true;
+                    case R.id.profile:
+                        Intent intent = new Intent(JobHistoryActivity.this, ProfileActivity.class);
+                        intent.putExtra(ProfileActivity.TAG, LoggedInUser.getInstance().getEmail());
+                        startActivity(intent);
+                        overridePendingTransition(0,0);
+                        return true;
+                }
+                return false;
+            }
+        });
     }
 }
 

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
@@ -11,6 +12,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -25,6 +27,7 @@ import com.example.nftscmers.objectmodels.JobModel;
 import com.example.nftscmers.utils.Globals;
 import com.example.nftscmers.utils.LoggedInUser;
 import com.example.nftscmers.utils.Utils;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.ktx.Firebase;
 
@@ -61,7 +64,6 @@ public class EditJobActivity extends AppCompatActivity {
         skills = findViewById(R.id.edit_job_skills);
         confirm = findViewById(R.id.edit_job_confirm);
 
-        // TODO: pass the Job UUID into the intent
         if (getIntent().getStringExtra(ViewJobActivity.TAG) != null) {
             // Loading of previous job data
             new JobDb(EditJobActivity.this, new JobDb.OnJobModel() {
@@ -90,7 +92,7 @@ public class EditJobActivity extends AppCompatActivity {
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(EditJobActivity.this, ViewJobActivity.class);
+                Intent intent = new Intent(EditJobActivity.this, ScrollApplicationActivity.class);
                 startActivity(intent);
             }
         });
@@ -134,7 +136,7 @@ public class EditJobActivity extends AppCompatActivity {
                 JobDb jobDb = new JobDb(EditJobActivity.this, new JobDb.OnJobUploadSuccess() {
                     @Override
                     public void onResult() {
-                        Intent intent = new Intent(EditJobActivity.this, ViewJobActivity.class);
+                        Intent intent = new Intent(EditJobActivity.this, ScrollApplicationActivity.class);
                         startActivity(intent);
                     }
                 });
@@ -146,7 +148,7 @@ public class EditJobActivity extends AppCompatActivity {
 
                 // Handling if it is an existing job or new job
                 if (job.getDocumentId() == null) {
-                    jobDb.createJob(job, LoggedInUser.getInstance().getUserDocRef());
+                    jobDb.createJob(job, LoggedInUser.getInstance().getEmail());
                 } else {
                     jobDb.updateJob(job);
                 }

@@ -1,9 +1,10 @@
 package com.example.nftscmers.employeractivities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -19,75 +20,78 @@ import com.example.nftscmers.adapters.ApplicantAdapter;
 import com.example.nftscmers.objectmodels.ApplicantModel;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.example.nftscmers.commonactivities.FeedbackActivity;
+import com.example.nftscmers.db.ApplicationDb;
+import com.example.nftscmers.db.EmployerDb;
+import com.example.nftscmers.db.JobDb;
+import com.example.nftscmers.db.ApplicantDb;
+import com.example.nftscmers.objectmodels.ApplicantModel;
+import com.example.nftscmers.objectmodels.ApplicationModel;
+import com.example.nftscmers.objectmodels.EmployerModel;
+import com.example.nftscmers.objectmodels.JobModel;
+import com.example.nftscmers.utils.LoggedInUser;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.lorentzos.flingswipe.SwipeFlingAdapterView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ScrollApplicationActivity extends AppCompatActivity {
-
-    ApplicantAdapter arrayAdapter;
-    TextView name;
-    TextView email;
-    ImageView image;
     SwipeFlingAdapterView flingAdapterView;
-    ListView detailsListView;
-    ArrayList<HashMap<String, String>> detailedDetailsList = new ArrayList<>();
-    ArrayList<DocumentReference> detailsList;
+    HashMap<ApplicantModel, ArrayList<DocumentReference>> jobTracker;
 
-    // TODO: Change the TAG
-    public static final String TAG = "YOUR-TAG-NAME";
-
-
+    public static final String TAG = "ScrollApplication";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.like_dislike_button_bottom);
+        setContentView(R.layout.activity_scroll_application);
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         flingAdapterView=findViewById(R.id.swipe);
 
-        ArrayList<Object> item = new ArrayList<>();
-//        item.add("welcome");
+        ArrayList<ApplicantModel> item = new ArrayList<>();
+        jobTracker = new HashMap<>();
 
+        ApplicantAdapter arrayAdapter =new ApplicantAdapter(ScrollApplicationActivity.this, R.layout.item_in_cardview, item);
+        flingAdapterView.setAdapter(arrayAdapter);
 
-        //Iterating through list of applicant details in firebase and displaying on card swipe
-        db.collection("Applicants")
-                .get()
-        .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        new EmployerDb(ScrollApplicationActivity.this, new EmployerDb.OnEmployerModel() {
             @Override
-            public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                if (task.isSuccessful()) {
+            public void onResult(EmployerModel employerModel) {
+                for (DocumentReference job : employerModel.getJobs()) {
+                    new JobDb(ScrollApplicationActivity.this, new JobDb.OnJobModel() {
+                        @Override
+                        public void onResult(JobModel jobModel) {
+                            for (DocumentReference application : jobModel.getPending()) {
+                                Log.d(TAG, "onResult: " + application.getId());
+                                new ApplicationDb(ScrollApplicationActivity.this, new ApplicationDb.OnApplicationModel() {
+                                    @Override
+                                    public void onResult(ApplicationModel applicationModel) {
+                                        new ApplicantDb(ScrollApplicationActivity.this, new ApplicantDb.OnApplicantModel() {
+                                            @Override
+                                            public void onResult(ApplicantModel applicantModel) {
+                                                Log.d(TAG, "onResult: " + applicantModel);
+                                                item.add(applicantModel);
 
+                                                ArrayList<DocumentReference> tracker = new ArrayList<>();
+                                                tracker.add(application);
+                                                tracker.add(job);
 
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        HashMap<String, String> details = new HashMap<>();
-                        details.put(ApplicantModel.EMAIL, ApplicantModel.getEmail());
-//                        Log.d(TAG, document.getId() + " => " + document.getData());
-//                        item.add(document.getString("email") + "\n" + document.getString("about") + "\n" + document.get("skills"));
-//                        Utils.loadImage(model.getImage(), thisimage);
-                    arrayAdapter.notifyDataSetChanged();
-                }} else {
-                    Log.w(TAG, "Error getting documents.", task.getException());
+                                                jobTracker.put(applicantModel, tracker);
+                                                arrayAdapter.notifyDataSetChanged();
+                                            }
+                                        }).getApplicantModel(applicationModel.getApplicant());
+                                    }
+                                }).getApplicationModel(application);
+                            }
+                        }
+                    }).getJobModel(job);
                 }
             }
-        });
-
-
-
-        ArrayAdapter arrayAdapter=new ApplicantAdapter(ScrollApplicationActivity.this, R.layout.item_in_cardview, detailedDetailsList, new ApplicantAdapter.OnItemClickListener() {
-            @Override
-            public void onResult(int position) {
-
-            }
-        });
-
-        flingAdapterView.setAdapter(arrayAdapter);
+        }).getEmployerModel(LoggedInUser.getInstance().getEmail());
 
         flingAdapterView.setFlingListener(new SwipeFlingAdapterView.onFlingListener() {
             @Override
@@ -98,14 +102,39 @@ public class ScrollApplicationActivity extends AppCompatActivity {
 
             @Override
             public void onLeftCardExit(Object o) {
-
-                Toast.makeText(ScrollApplicationActivity.this,"dislike",Toast.LENGTH_SHORT).show();
+                new JobDb(ScrollApplicationActivity.this, new JobDb.OnJobUploadSuccess() {
+                    @Override
+                    public void onResult() {
+                        new ApplicationDb(ScrollApplicationActivity.this, new ApplicationDb.OnApplicationUploadSuccess() {
+                            @Override
+                            public void onResult() {
+                                Toast.makeText(ScrollApplicationActivity.this,"Rejected",Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(ScrollApplicationActivity.this, FeedbackActivity.class);
+                                intent.putExtra(FeedbackActivity.TAG, jobTracker.get(o).get(0).getId());
+                                startActivityForResult(intent, 0);
+                            }
+                        }).updateApplicationStatus(ApplicationModel.REJECTED, jobTracker.get(o).get(0));
+                    }
+                }).deletePending(jobTracker.get(o).get(0), jobTracker.get(o).get(1));
             }
 
             @Override
             public void onRightCardExit(Object o) {
-
-                Toast.makeText(ScrollApplicationActivity.this,"like",Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "onRightCardExit: " + o);
+                new JobDb(ScrollApplicationActivity.this, new JobDb.OnJobUploadSuccess() {
+                    @Override
+                    public void onResult() {
+                        new ApplicationDb(ScrollApplicationActivity.this, new ApplicationDb.OnApplicationUploadSuccess() {
+                            @Override
+                            public void onResult() {
+                                Toast.makeText(ScrollApplicationActivity.this,"Accepted",Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(ScrollApplicationActivity.this, FeedbackActivity.class);
+                                intent.putExtra(FeedbackActivity.TAG, jobTracker.get(o).get(0).getId());
+                                startActivityForResult(intent, 0);
+                            }
+                        }).updateApplicationStatus(ApplicationModel.ACCEPTED, jobTracker.get(o).get(0));
+                    }
+                }).deletePending(jobTracker.get(o).get(0), jobTracker.get(o).get(1));
             }
 
             @Override
@@ -122,7 +151,9 @@ public class ScrollApplicationActivity extends AppCompatActivity {
         flingAdapterView.setOnItemClickListener(new SwipeFlingAdapterView.OnItemClickListener() {
             @Override
             public void onItemClicked(int i, Object o) {
-                Toast.makeText(ScrollApplicationActivity.this, "data is "+item.get(i),Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(ScrollApplicationActivity.this, com.example.nftscmers.applicantactivities.ProfileActivity.class);
+                intent.putExtra(com.example.nftscmers.applicantactivities.ProfileActivity.TAG, item.get(i).getDocumentId());
+                startActivity(intent);
             }
         });
 
@@ -141,6 +172,42 @@ public class ScrollApplicationActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 flingAdapterView.getTopCardListener().selectLeft();
+            }
+        });
+
+        // Initialize and assign variable
+        BottomNavigationView bottomNavigationView=findViewById(R.id.bottom_navigation);
+
+        // Set Home selected
+        bottomNavigationView.setSelectedItemId(R.id.home);
+
+        // Perform item selected listener
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                Intent intent;
+
+                switch(item.getItemId())
+                {
+                    case R.id.history:
+                        intent = new Intent(ScrollApplicationActivity.this, JobHistoryActivity.class);
+                        startActivity(intent);
+                        overridePendingTransition(0,0);
+                        return true;
+                    case R.id.home:
+                        return true;
+                    case R.id.create:
+                        startActivity(new Intent(getApplicationContext(), EditJobActivity.class));
+                        overridePendingTransition(0,0);
+                        return true;
+                    case R.id.profile:
+                        intent = new Intent(ScrollApplicationActivity.this, ProfileActivity.class);
+                        intent.putExtra(ProfileActivity.TAG, LoggedInUser.getInstance().getEmail());
+                        startActivity(intent);
+                        overridePendingTransition(0,0);
+                        return true;
+                }
+                return false;
             }
         });
 

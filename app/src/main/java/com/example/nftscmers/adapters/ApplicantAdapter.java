@@ -8,62 +8,63 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-
-import androidx.annotation.NonNull;
 
 import com.example.nftscmers.R;
 import com.example.nftscmers.objectmodels.ApplicantModel;
-import com.example.nftscmers.objectmodels.JobModel;
-import com.example.nftscmers.objectmodels.TestModel;
-import com.google.firebase.firestore.DocumentReference;
+import com.example.nftscmers.utils.Utils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
-public class ApplicantAdapter extends ArrayAdapter<HashMap<String, String>> {
-    private final LayoutInflater mInflater;
-    private final List<HashMap<String, String>> detailsList;
-    OnItemClickListener onItemClickListener;
+public class ApplicantAdapter extends ArrayAdapter {
+    public static final String TAG = "ApplicantAdapter";
+    ArrayList<ApplicantModel> applicants_list;
+    public Activity context;
+    public LayoutInflater inflater;
 
-    public ApplicantAdapter(Context context, int resource, @NonNull ArrayList<HashMap<String, String>> detailsList, OnItemClickListener onItemClickListener) {
-        super(context, resource, detailsList);
+    public ApplicantAdapter(Activity context, int resource, ArrayList<ApplicantModel> applicants_list) {
+        super(context, resource, applicants_list);
 
-        this.detailsList = detailsList;
-        mInflater = LayoutInflater.from(context);
-        this.onItemClickListener = onItemClickListener;
+        this.applicants_list = applicants_list;
+        this.context = context;
+        this.inflater = (LayoutInflater) context
+                .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
-    public interface OnItemClickListener {
-        void onResult(int position);
+    @Override
+    public int getCount() {
+        return applicants_list.size();
     }
 
-    public View getView(final int position, View convertView, ViewGroup parent) {
+    @Override
+    public Object getItem(int position) {
+        return applicants_list.get(position);
+    }
 
-        View view = mInflater.inflate(R.layout.item_in_cardview, null);
+    @Override
+    public long getItemId(int position) {
+        return 0;
+    }
 
-        TextView name = view.findViewById(R.id.name);
-//        ImageView image = view.findViewById(R.id.thisimage);
 
-        HashMap<String, String> details = detailsList.get(position);
+    public View getView(int position, View convertView, ViewGroup parent) {
 
-        name.setText(details.get(ApplicantModel.EMAIL));
-//        image.setImageURI(details.get(ApplicantModel.C));
+        View view = inflater.inflate(R.layout.item_in_cardview, parent, false);
+        TextView nameView = view.findViewById(R.id.name);
+        ImageView imageView = view.findViewById(R.id.thisimage);
+        ApplicantModel applicant = (ApplicantModel) applicants_list.get(position);
 
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onItemClickListener.onResult(position);
-            }
-        });
+
+        nameView.setText(applicant.getName());
+        Utils.loadSquareImage(imageView, applicant.getImage());
+        Log.i("applicant data", applicant.getName());
+        Log.i("applicant data", applicant.getImage());
+
 
         return view;
 
     }
 }
+

@@ -1,6 +1,7 @@
 package com.example.nftscmers.db;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -111,10 +112,9 @@ public class JobDb extends Db {
             return;
         }
 
-        employer.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+        new EmployerDb(context, new EmployerDb.OnEmployerModel() {
             @Override
-            public void onSuccess(DocumentSnapshot documentSnapshot) {
-                EmployerModel employerModel = documentSnapshot.toObject(EmployerModel.class);
+            public void onResult(EmployerModel employerModel) {
                 jobModel.setEmployerName(employerModel.getName());
                 jobModel.setEmployerPic(employerModel.getImage());
 
@@ -131,7 +131,21 @@ public class JobDb extends Db {
                     }
                 });
             }
-        });
+        }).getEmployerModel(employer);
+    }
+
+    /**
+     * Push a job onto FireStore
+     * @param jobModel a JobModel object containing the details of the job
+     */
+    public void createJob(JobModel jobModel, String email) {
+        if (!Utils.isNetworkAvailable(context)) {
+            Toast.makeText(context, R.string.network_missing, Toast.LENGTH_SHORT).show();
+            onJobModel.onResult(null);
+            return;
+        }
+
+        createJob(jobModel, getDocument(email));
     }
 
     /**
@@ -161,14 +175,13 @@ public class JobDb extends Db {
      * Update pending field in FireStore
      * @param application a DocumentReference object indicating the application
      */
-    // TODO: CHANGE
     public void deletePending(DocumentReference application, DocumentReference job) {
         if (!Utils.isNetworkAvailable(context)) {
             onJobUploadFailure.onResult();
             return;
         }
 
-        job.update(JobModel.PENDING, FieldValue.arrayUnion(application)).addOnSuccessListener(new OnSuccessListener<Void>() {
+        job.update(JobModel.PENDING, FieldValue.arrayRemove(application)).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void unused) {
                 onJobUploadSuccess.onResult();
