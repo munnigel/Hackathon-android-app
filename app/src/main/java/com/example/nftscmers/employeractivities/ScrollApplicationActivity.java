@@ -1,13 +1,12 @@
 package com.example.nftscmers.employeractivities;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,34 +15,29 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.nftscmers.R;
-import com.example.nftscmers.fragments.ApplicantAdapter;
+import com.example.nftscmers.adapters.ApplicantAdapter;
 import com.example.nftscmers.objectmodels.ApplicantModel;
-import com.example.nftscmers.objectmodels.TestModel;
-import com.example.nftscmers.utils.Utils;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.lorentzos.flingswipe.SwipeFlingAdapterView;
-import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ScrollApplicationActivity extends AppCompatActivity {
 
-    private ArrayAdapter<Object> arrayAdapter;
-//    ApplicantAdapter arrayAdapter;
+    ApplicantAdapter arrayAdapter;
     TextView name;
     TextView email;
     ImageView image;
     SwipeFlingAdapterView flingAdapterView;
-
+    ListView detailsListView;
+    ArrayList<HashMap<String, String>> detailedDetailsList = new ArrayList<>();
+    ArrayList<DocumentReference> detailsList;
 
     // TODO: Change the TAG
     public static final String TAG = "YOUR-TAG-NAME";
@@ -70,9 +64,12 @@ public class ScrollApplicationActivity extends AppCompatActivity {
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if (task.isSuccessful()) {
 
+
                     for (QueryDocumentSnapshot document : task.getResult()) {
+                        HashMap<String, String> details = new HashMap<>();
+                        details.put(ApplicantModel.EMAIL, ApplicantModel.getEmail());
 //                        Log.d(TAG, document.getId() + " => " + document.getData());
-                        item.add(document.getString("email") + "\n" + document.getString("about") + "\n" + document.get("skills"));
+//                        item.add(document.getString("email") + "\n" + document.getString("about") + "\n" + document.get("skills"));
 //                        Utils.loadImage(model.getImage(), thisimage);
                     arrayAdapter.notifyDataSetChanged();
                 }} else {
@@ -83,7 +80,12 @@ public class ScrollApplicationActivity extends AppCompatActivity {
 
 
 
-        arrayAdapter=new ArrayAdapter<>(ScrollApplicationActivity.this, R.layout.item_in_cardview, R.id.name, item);
+        ArrayAdapter arrayAdapter=new ApplicantAdapter(ScrollApplicationActivity.this, R.layout.item_in_cardview, detailedDetailsList, new ApplicantAdapter.OnItemClickListener() {
+            @Override
+            public void onResult(int position) {
+
+            }
+        });
 
         flingAdapterView.setAdapter(arrayAdapter);
 

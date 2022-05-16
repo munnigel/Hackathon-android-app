@@ -15,7 +15,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.nftscmers.R;
 
-import com.example.nftscmers.commonactivities.ViewJobActivity;
+//import com.example.nftscmers.commonactivities.ViewHistoryActivity;
+//import com.example.nftscmers.commonactivities.ViewJobActivity;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;

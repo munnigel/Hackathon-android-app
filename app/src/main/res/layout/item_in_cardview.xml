@@ -44,25 +44,13 @@
                     android:id="@+id/name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="500dp"
+                    android:layout_marginTop="300dp"
                     android:gravity="center"
                     android:padding="2dp"
                     android:text="CourseName"
                     android:textColor="@color/purple_500"
                     android:textSize="18sp"
                     android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/email"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="500dp"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:text="CourseName"
-                    android:textColor="@color/purple_500"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
 
 
 
